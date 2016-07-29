@@ -37,14 +37,16 @@ class Stepper(object):
 
         self.api.set_position(*position)
         for step in range(self.steplimit2):
+            
             # starting at 0 index
             logger.log('[#] Scanning area for objects ({} / {})'.format(
                 (step + 1), self.steplimit**2))
-            # if self.config.debug:  # [JW]: changed to always log
-            logger.log(
-                'steplimit: {} x: {} y: {} pos: {} dx: {} dy {}'.format(
-                    self.steplimit2, self.x, self.y, self.pos, self.dx,
-                    self.dy))
+            # # if self.config.debug:  # [JW]: changed to always log
+            # logger.log(
+            #     'steplimit: {} x: {} y: {} pos: {} dx: {} dy {}'.format(
+            #         self.steplimit2, self.x, self.y, self.pos, self.dx,
+            #         self.dy))
+            
             # Scan location math
             if -self.steplimit2 / 2 < self.x <= self.steplimit2 / 2 and -self.steplimit2 / 2 < self.y <= self.steplimit2 / 2:
                 position = (self.x * 0.0025 + random_lat_long_delta() + self.origin_lat,
@@ -70,7 +72,8 @@ class Stepper(object):
         residuum = steps - intSteps
         logger.log('[#] Walking from ' + str((i2f(self.api._position_lat), i2f(
             self.api._position_lng))) + " to " + str(str((lat, lng))) +
-                   " for approx. " + str(format_time(ceil(steps))) + " at speed " + str(speed))
+                   " for approx. " + str(format_time(ceil(steps))) + 
+                   " at speed " + str(format(speed, '.2f')))
         if steps != 0:
             dLat = (lat - i2f(self.api._position_lat)) / steps
             dLng = (lng - i2f(self.api._position_lng)) / steps
@@ -83,6 +86,7 @@ class Stepper(object):
                 self.api.set_position(cLat, cLng, alt)
                 self.bot.heartbeat()
                 sleep(1)  # sleep one second plus a random delta
+                sleep(1)
                 self._work_at_position(
                     i2f(self.api._position_lat), i2f(self.api._position_lng),
                     alt, False)

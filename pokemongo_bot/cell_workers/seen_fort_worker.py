@@ -73,21 +73,6 @@ class SeenFortWorker(object):
                                     "x " + item_name +
                                     " (Total: " + str(self.bot.item_inventory_count(item_id)) + ")", 'green')
 
-                        # RECYCLING UNWANTED ITEMS
-                        if str(item_id) in self.config.item_filter:
-                            logger.log("[+] Recycling " + str(item_count) + "x " + item_name + "...", 'green')
-                            #RECYCLE_INVENTORY_ITEM
-                            response_dict_recycle = self.bot.drop_item(item_id=item_id, count=item_count)
-
-                            if response_dict_recycle and \
-                                'responses' in response_dict_recycle and \
-                                'RECYCLE_INVENTORY_ITEM' in response_dict_recycle['responses'] and \
-                                    'result' in response_dict_recycle['responses']['RECYCLE_INVENTORY_ITEM']:
-                                result = response_dict_recycle['responses']['RECYCLE_INVENTORY_ITEM']['result']
-                            if result is 1: # Request success
-                                logger.log("[+] Recycling success", 'green')
-                            else:
-                                logger.log("[+] Recycling failed!", 'red')
                 else:
                     logger.log("[#] Nothing found.", 'yellow')
 
@@ -127,13 +112,33 @@ class SeenFortWorker(object):
                     logger.log("[+] " + str(experience_awarded) + " xp", 'green')
                 # self.config.mode = 'poke'
 
+                # RECYCLING UNWANTED ITEMS
+                for recy_item_id in self.config.item_filter:
+                    recy_item_count = self.bot.item_inventory_count(recy_item_id)
+                    recy_item_name = self.item_list[str(recy_item_id)]
+                    # logger.log("recy_item_name=" + str(recy_item_name))
+                    # logger.log("recy_item_id=" + str(recy_item_id))
+                    # logger.log("recy_item_count=" + str(recy_item_count))
+                    if recy_item_count > 0:
+                        logger.log("[+] Recycling " + str(recy_item_count) + "x " + recy_item_name + "...", 'green')
+                        response_dict_recycle = self.bot.drop_item(item_id=int(recy_item_id), count=recy_item_count)
+                        if response_dict_recycle and \
+                            'responses' in response_dict_recycle and \
+                            'RECYCLE_INVENTORY_ITEM' in response_dict_recycle['responses'] and \
+                                'result' in response_dict_recycle['responses']['RECYCLE_INVENTORY_ITEM']:
+                            result = response_dict_recycle['responses']['RECYCLE_INVENTORY_ITEM']['result']
+                            if result is 1: # Request success
+                                logger.log("[+] Recycling success", 'green')
+                            else:
+                                logger.log("[+] Recycling failed!", 'red')
+
             if 'chain_hack_sequence_number' in response_dict['responses'][
                     'FORT_SEARCH']:
                 time.sleep(2)
                 return response_dict['responses']['FORT_SEARCH'][
                     'chain_hack_sequence_number']
             else:
-                print_yellow('[#] may search too often, lets have a rest')
+                print_yellow('[#] searching too often, consider having a rest')
                 return 11
         sleep(8)
         return 0

@@ -36,12 +36,12 @@ class PokemonGoBot(object):
         self.stepper.take_step()
 
     def work_on_cell(self, cell, position, include_fort_on_path):
-        if self.config.evolve_all:
-            # Run evolve all once. Flip the bit.
-            print('[#] Attempting to evolve all pokemons ...')
-            worker = EvolveAllWorker(self)
-            worker.work()
-            self.config.evolve_all = []
+        # if self.config.evolve_all:
+        #     # Run evolve all once. Flip the bit.
+        #     print('[#] Attempting to evolve all pokemons ...')
+        #     worker = EvolveAllWorker(self)
+        #     worker.work()
+        #     self.config.evolve_all = []
 
         self._filter_ignored_pokemons(cell)
 

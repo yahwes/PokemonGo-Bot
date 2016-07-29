@@ -3,6 +3,7 @@
 import time
 from math import ceil
 from random import random, randint, uniform
+from pokemongo_bot import logger
 
 
 def sleep(seconds, delta=0.3):
@@ -16,7 +17,8 @@ def sleep(seconds, delta=0.3):
 #     return ((random() * 0.00001) - 0.000005) * 5
 
 def random_lat_long_delta(delta_ft=9.1):
-    return (uniform(delta_ft/-364000, delta_ft/364000))
+    delta_degree = uniform(-delta_ft, delta_ft)
+    return delta_degree/364000
 
 def random_speed_delta():
-    return (random())
+    return (random() * 2)
