@@ -119,8 +119,13 @@ class SeenFortWorker(object):
                         format_time((pokestop_cooldown / 1000) -
                                     seconds_since_epoch)))
             elif spin_details['result'] == 4:
-                print_red("[#] Inventory is full, switching to catch mode...")
-                self.config.mode = 'poke'
+                # [JW]: experience is still received when inventory is full
+                # print_red("[#] Inventory is full, switching to catch mode...")
+                print_red("[#] Inventory is full...")
+                experience_awarded = spin_details.get('experience_awarded', False)
+                if experience_awarded:
+                    logger.log("[+] " + str(experience_awarded) + " xp", 'green')
+                # self.config.mode = 'poke'
 
             if 'chain_hack_sequence_number' in response_dict['responses'][
                     'FORT_SEARCH']:

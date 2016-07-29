@@ -114,3 +114,6 @@ data/catch-ignore.yml
 release_config.json
 web/userdata.js
 location.json
+
+# My Personal
+.Rhistory

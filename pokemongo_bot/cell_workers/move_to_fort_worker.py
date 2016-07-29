@@ -1,5 +1,5 @@
 from utils import distance, format_dist
-from pokemongo_bot.human_behaviour import sleep
+from pokemongo_bot.human_behaviour import sleep, random_lat_long_delta
 from pokemongo_bot import logger
 
 class MoveToFortWorker(object):
@@ -25,6 +25,7 @@ class MoveToFortWorker(object):
         if dist > 10:
             logger.log('[#] Need to move closer to Pokestop')
             position = (lat, lng, 0.0)
+            # position = (lat + random_lat_long_delta(2), lng + random_lat_long_delta(2), 0.0)  # [JW]
 
             if self.config.walk > 0:
                 self.stepper._walk_to(self.config.walk, *position)

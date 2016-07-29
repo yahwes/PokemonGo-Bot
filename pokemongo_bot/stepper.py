@@ -9,7 +9,7 @@ from math import ceil
 from s2sphere import CellId, LatLng
 from google.protobuf.internal import encoder
 
-from human_behaviour import sleep, random_lat_long_delta
+from human_behaviour import sleep, random_lat_long_delta, random_speed_delta
 from cell_workers.utils import distance, i2f, format_time
 
 from pgoapi.utilities import f2i, h2f
@@ -40,17 +40,17 @@ class Stepper(object):
             # starting at 0 index
             logger.log('[#] Scanning area for objects ({} / {})'.format(
                 (step + 1), self.steplimit**2))
-            if self.config.debug:
-                logger.log(
-                    'steplimit: {} x: {} y: {} pos: {} dx: {} dy {}'.format(
-                        self.steplimit2, self.x, self.y, self.pos, self.dx,
-                        self.dy))
+            # if self.config.debug:  # [JW]: changed to always log
+            logger.log(
+                'steplimit: {} x: {} y: {} pos: {} dx: {} dy {}'.format(
+                    self.steplimit2, self.x, self.y, self.pos, self.dx,
+                    self.dy))
             # Scan location math
             if -self.steplimit2 / 2 < self.x <= self.steplimit2 / 2 and -self.steplimit2 / 2 < self.y <= self.steplimit2 / 2:
-                position = (self.x * 0.0025 + self.origin_lat,
-                            self.y * 0.0025 + self.origin_lon, 0)
+                position = (self.x * 0.0025 + random_lat_long_delta() + self.origin_lat,
+                            self.y * 0.0025 + random_lat_long_delta() + self.origin_lon, 0)
                 if self.config.walk > 0:
-                    self._walk_to(self.config.walk, *position)
+                    self._walk_to(self.config.walk + random_speed_delta(), *position)
                 else:
                     self.api.set_position(*position)
                 print('[#] {}'.format(position))
@@ -70,7 +70,7 @@ class Stepper(object):
         residuum = steps - intSteps
         logger.log('[#] Walking from ' + str((i2f(self.api._position_lat), i2f(
             self.api._position_lng))) + " to " + str(str((lat, lng))) +
-                   " for approx. " + str(format_time(ceil(steps))))
+                   " for approx. " + str(format_time(ceil(steps))) + " at speed " + str(speed))
         if steps != 0:
             dLat = (lat - i2f(self.api._position_lat)) / steps
             dLng = (lng - i2f(self.api._position_lng)) / steps
