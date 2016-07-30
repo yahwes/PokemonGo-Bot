@@ -4,6 +4,7 @@ import os
 import json
 import time
 import pprint
+import sys
 
 from math import ceil
 from s2sphere import CellId, LatLng
@@ -63,6 +64,33 @@ class Stepper(object):
 
             self._work_at_position(position[0], position[1], position[2], True)
             sleep(10)
+    
+    def take_set_path(self, dest_lat, dest_lon):
+        position = (self.origin_lat, self.origin_lon, 0.0)
+        self.api.set_position(*position)
+        
+        # walk to destination
+        position = (dest_lat + random_lat_long_delta(), dest_lon + random_lat_long_delta(), 0)
+        if self.config.walk > 0:
+            self._walk_to(self.config.walk + random_speed_delta(), *position)
+        else:
+            self.api.set_position(*position)  # is this teleporting when walk=0?
+        print('[#] {}'.format(position))
+        self._work_at_position(position[0], position[1], position[2], True)
+        sleep(5)
+
+        # walk back to origin
+        logger.log('[x] Turning around!', 'yellow')
+        position = (self.origin_lat + random_lat_long_delta(), self.origin_lon + random_lat_long_delta(), 0)
+        if self.config.walk > 0:
+            self._walk_to(self.config.walk + random_speed_delta(), *position)
+        else:
+            self.api.set_position(*position)
+        print('[#] {}'.format(position))
+        self._work_at_position(position[0], position[1], position[2], True)
+        sleep(5)
+        sys.exit("Run completed!")
+
 
     def _walk_to(self, speed, lat, lng, alt):
         dist = distance(
@@ -71,9 +99,9 @@ class Stepper(object):
         intSteps = int(steps)
         residuum = steps - intSteps
         logger.log('[#] Walking from ' + str((i2f(self.api._position_lat), i2f(
-            self.api._position_lng))) + " to " + str(str((lat, lng))) +
-                   " for approx. " + str(format_time(ceil(steps))) + 
-                   " at speed " + str(format(speed, '.2f')))
+            self.api._position_lng))) + " to " + str(str((lat, lng))))
+        logger.log("[#] Approx. " + str(format_time(ceil(steps))) + 
+            " at speed " + str(format(speed, '.2f')))
         if steps != 0:
             dLat = (lat - i2f(self.api._position_lat)) / steps
             dLng = (lng - i2f(self.api._position_lng)) / steps
@@ -87,6 +115,8 @@ class Stepper(object):
                 self.bot.heartbeat()
                 sleep(1)  # sleep one second plus a random delta
                 sleep(1)
+                logger.log("[#] Current location: (" + str(format(cLat,'.6f')) + ", " + str(format(cLng,'.6f')) + ")", 'gray')
+                # print('[#] (Lat, Lon):, ({:f}, {:f})'.format(cLat, cLng))
                 self._work_at_position(
                     i2f(self.api._position_lat), i2f(self.api._position_lng),
                     alt, False)
@@ -139,7 +169,12 @@ class Stepper(object):
                     #print( s2sphere.from_token(x['s2_cell_id']) )
                     map_cells.sort(key=lambda x: distance(lat, lng, x['forts'][0]['latitude'], x[
                                    'forts'][0]['longitude']) if 'forts' in x and x['forts'] != [] else 1e6)
+                    timeout_cell = time.time() + 60*5  # minute(s) timer
+                    # logger.log('[x] Cell loop timeout: ' + str(timeout_cell), 'blue')
                     for cell in map_cells:
+                        if time.time() > timeout_cell:
+                            logger.log("[x] I REALLY need a break...", 'red')
+                            break
                         self.bot.work_on_cell(cell, position, pokemon_only)
 
     def _get_cellid(self, lat, long, radius=10):

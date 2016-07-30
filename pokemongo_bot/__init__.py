@@ -10,6 +10,7 @@ import sys
 import yaml
 import logger
 import re
+import time
 from pgoapi import PGoApi
 from cell_workers import PokemonCatchWorker, SeenFortWorker, MoveToFortWorker, InitialTransferWorker, EvolveAllWorker
 from cell_workers.utils import distance
@@ -34,6 +35,9 @@ class PokemonGoBot(object):
 
     def take_step(self):
         self.stepper.take_step()
+
+    def take_set_path(self, dest_lat, dest_lon):
+        self.stepper.take_set_path(dest_lat=dest_lat, dest_lon=dest_lon)
 
     def work_on_cell(self, cell, position, include_fort_on_path):
         # if self.config.evolve_all:
@@ -88,13 +92,16 @@ class PokemonGoBot(object):
                 # build graph & A* it
                 forts.sort(key=lambda x: distance(self.position[
                            0], self.position[1], x['latitude'], x['longitude']))
+                timeout_fort = time.time() + 60*1  # minute(s) timer
+                # logger.log('[x] Fort loop timeout: ' + str(timeout_fort), 'blue')
                 for fort in forts:
                     worker = MoveToFortWorker(fort, self)
                     worker.work()
 
                     worker = SeenFortWorker(fort, self)
                     hack_chain = worker.work()
-                    if hack_chain > 10:
+                    if hack_chain > 10 or time.time() > timeout_fort:
+                        logger.log('[x] Might need a rest...', 'red')
                         #print('need a rest')
                         break
 

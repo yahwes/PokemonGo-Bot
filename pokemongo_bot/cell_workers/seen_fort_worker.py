@@ -28,8 +28,9 @@ class SeenFortWorker(object):
                               latitude=lat,
                               longitude=lng)
         response_dict = self.api.call()
-        if 'responses' in response_dict \
-                and'FORT_DETAILS' in response_dict['responses'] \
+        if response_dict and \
+            'responses' in response_dict \
+                and 'FORT_DETAILS' in response_dict['responses'] \
                 and 'name' in response_dict['responses']['FORT_DETAILS']:
             fort_details = response_dict['responses']['FORT_DETAILS']
             fort_name = fort_details['name'].encode('utf8', 'replace')
@@ -114,7 +115,7 @@ class SeenFortWorker(object):
 
                 # RECYCLING UNWANTED ITEMS
                 for recy_item_id in self.config.item_filter:
-                    recy_item_count = self.bot.item_inventory_count(recy_item_id)
+                    recy_item_count = min(10, self.bot.item_inventory_count(recy_item_id))
                     recy_item_name = self.item_list[str(recy_item_id)]
                     # logger.log("recy_item_name=" + str(recy_item_name))
                     # logger.log("recy_item_id=" + str(recy_item_id))

@@ -72,6 +72,8 @@ def init_config():
     parser.add_argument("-u", "--username", help="Username")
     parser.add_argument("-p", "--password", help="Password")
     parser.add_argument("-l", "--location", help="Location")
+    parser.add_argument("-destlat", "--destination_lat", help="DestinationLat")
+    parser.add_argument("-destlon", "--destination_lon", help="DestinationLon")
     parser.add_argument("-lc",
                         "--location_cache",
                         help="Bot will start at last known location",
@@ -207,7 +209,10 @@ def main():
 
         logger.log('[x] Starting PokemonGo Bot....', 'green')
 
-        while True:
+        # take set path code
+        bot.take_set_path(config.destination_lat, config.destination_lon)
+
+        while True:  # this currently does not run, take_set_path calls sys.exit()
             bot.take_step()
 
     except KeyboardInterrupt:

@@ -116,4 +116,6 @@ web/userdata.js
 location.json
 
 # My Personal
+web/rd.csv
 .Rhistory
+.csv
