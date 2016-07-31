@@ -11,7 +11,7 @@ from s2sphere import CellId, LatLng
 from google.protobuf.internal import encoder
 
 from human_behaviour import sleep, random_lat_long_delta, random_speed_delta
-from cell_workers.utils import distance, i2f, format_time
+from cell_workers.utils import distance, i2f, format_time, format_dist
 
 from pgoapi.utilities import f2i, h2f
 import logger
@@ -71,24 +71,22 @@ class Stepper(object):
         
         # walk to destination
         position = (dest_lat + random_lat_long_delta(), dest_lon + random_lat_long_delta(), 0)
-        if self.config.walk > 0:
+        self._walk_to(self.config.walk + random_speed_delta(), *position)
+        logger.log("[x] Made it to destination!", 'yellow')
+        
+        timeout_dest = time.time() + 60*1  # minute(s) timer
+        while time.time() < timeout_dest:
+            self._work_at_position(position[0], position[1], position[2], True)
+            logger.log("Repositioning to destination...", 'blue')
             self._walk_to(self.config.walk + random_speed_delta(), *position)
-        else:
-            self.api.set_position(*position)  # is this teleporting when walk=0?
-        print('[#] {}'.format(position))
-        self._work_at_position(position[0], position[1], position[2], True)
-        sleep(5)
+            sleep(2)
 
         # walk back to origin
         logger.log('[x] Turning around!', 'yellow')
         position = (self.origin_lat + random_lat_long_delta(), self.origin_lon + random_lat_long_delta(), 0)
-        if self.config.walk > 0:
-            self._walk_to(self.config.walk + random_speed_delta(), *position)
-        else:
-            self.api.set_position(*position)
-        print('[#] {}'.format(position))
+        self._walk_to(self.config.walk + random_speed_delta(), *position)
         self._work_at_position(position[0], position[1], position[2], True)
-        sleep(5)
+        sleep(4)
         sys.exit("Run completed!")
 
 
@@ -100,7 +98,8 @@ class Stepper(object):
         residuum = steps - intSteps
         logger.log('[#] Walking from ' + str((i2f(self.api._position_lat), i2f(
             self.api._position_lng))) + " to " + str(str((lat, lng))))
-        logger.log("[#] Approx. " + str(format_time(ceil(steps))) + 
+        logger.log("[#] Distance " + format_dist(dist, self.config.distance_unit) +
+            " for approx. " + str(format_time(ceil(steps))) + 
             " at speed " + str(format(speed, '.2f')))
         if steps != 0:
             dLat = (lat - i2f(self.api._position_lat)) / steps
@@ -113,10 +112,8 @@ class Stepper(object):
                     dLng + random_lat_long_delta()
                 self.api.set_position(cLat, cLng, alt)
                 self.bot.heartbeat()
-                sleep(1)  # sleep one second plus a random delta
-                sleep(1)
-                logger.log("[#] Current location: (" + str(format(cLat,'.6f')) + ", " + str(format(cLng,'.6f')) + ")", 'gray')
-                # print('[#] (Lat, Lon):, ({:f}, {:f})'.format(cLat, cLng))
+                sleep(1)  # sleep 2 seconds plus a random delta
+                # logger.log("[#] Current location: (" + str(format(cLat,'.6f')) + ", " + str(format(cLng,'.6f')) + ")", 'gray')
                 self._work_at_position(
                     i2f(self.api._position_lat), i2f(self.api._position_lng),
                     alt, False)
@@ -126,13 +123,15 @@ class Stepper(object):
             logger.log("[#] Finished walking")
 
     def _work_at_position(self, lat, lng, alt, pokemon_only=False):
+        logger.log("Working at pos. (" + str(lat) + ", " + str(lng) + ") alt=" +
+            str(alt) + " mode=" + str(pokemon_only), 'gray')
         cellid = self._get_cellid(lat, lng)
         timestamp = [0, ] * len(cellid)
         self.api.get_map_objects(latitude=f2i(lat),
                                  longitude=f2i(lng),
                                  since_timestamp_ms=timestamp,
                                  cell_id=cellid)
-
+        sleep(1)
         response_dict = self.api.call()
         # pprint.pprint(response_dict)
         # Passing Variables through a file
@@ -157,6 +156,8 @@ class Stepper(object):
                             json.dump({'lat': lat, 'lng': lng}, outfile)
 
         if response_dict and 'responses' in response_dict:
+            # logger.log("DEBUG SECTION TEXT", 'red')
+            # print(response_dict) 
             if 'GET_MAP_OBJECTS' in response_dict['responses']:
                 if 'status' in response_dict['responses']['GET_MAP_OBJECTS']:
                     if response_dict['responses']['GET_MAP_OBJECTS'][
@@ -165,13 +166,20 @@ class Stepper(object):
                             'GET_MAP_OBJECTS']['map_cells']
                         position = (lat, lng, alt)
                     # Sort all by distance from current pos- eventually this should build graph & A* it
-                    # print(map_cells)
-                    #print( s2sphere.from_token(x['s2_cell_id']) )
+                    # logger.log("DEBUG SECTION TEXT", 'red')
+                    # print(map_cells) 
+                    # print( s2sphere.from_token(x['s2_cell_id']) )  
                     map_cells.sort(key=lambda x: distance(lat, lng, x['forts'][0]['latitude'], x[
                                    'forts'][0]['longitude']) if 'forts' in x and x['forts'] != [] else 1e6)
-                    timeout_cell = time.time() + 60*5  # minute(s) timer
+                    timeout_cell = time.time() + 60*10  # minute(s) timer
                     # logger.log('[x] Cell loop timeout: ' + str(timeout_cell), 'blue')
                     for cell in map_cells:
+                        # logger.log("DEBUG SECTION TEXT", 'yellow')
+                        # if len(str(cell)) > 100:
+                        #     print(str(cell)[:100] + '...')
+                        # else: 
+                        #     print(cell)
+
                         if time.time() > timeout_cell:
                             logger.log("[x] I REALLY need a break...", 'red')
                             break

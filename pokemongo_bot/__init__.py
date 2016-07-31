@@ -48,7 +48,8 @@ class PokemonGoBot(object):
         #     self.config.evolve_all = []
 
         self._filter_ignored_pokemons(cell)
-
+        # logger.log("Working at cell (" + str(position[0]) + ", " + str(position[1]) + ") " +
+        #     "include forts=" + str(include_fort_on_path), 'blue')
         if (self.config.mode == "all" or self.config.mode ==
                 "poke") and 'catchable_pokemons' in cell and len(cell[
                     'catchable_pokemons']) > 0:
@@ -81,7 +82,9 @@ class PokemonGoBot(object):
                     break
         if (self.config.mode == "all" or
                 self.config.mode == "farm") and include_fort_on_path:
+            logger.log("Check if fort statement...", 'blue')
             if 'forts' in cell:
+                logger.log("Entered fort found statement...", 'blue')
                 # Only include those with a lat/long
                 forts = [fort
                          for fort in cell['forts']
@@ -92,9 +95,11 @@ class PokemonGoBot(object):
                 # build graph & A* it
                 forts.sort(key=lambda x: distance(self.position[
                            0], self.position[1], x['latitude'], x['longitude']))
-                timeout_fort = time.time() + 60*1  # minute(s) timer
+                # print(forts)
+                timeout_fort = time.time() + 60*3  # minute(s) timer
                 # logger.log('[x] Fort loop timeout: ' + str(timeout_fort), 'blue')
                 for fort in forts:
+                    logger.log("Going to fort...", 'blue')
                     worker = MoveToFortWorker(fort, self)
                     worker.work()
 
